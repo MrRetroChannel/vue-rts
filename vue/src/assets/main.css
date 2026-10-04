@@ -1,35 +1,44 @@
 @import './base.css';
 
-#project {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
-  font-weight: normal;
+.game { height: 100%; }
+
+.topbar {
+  height: 42px;
+  padding: 0 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #252d24;
+  border-bottom: 1px solid #4e5a45;
 }
 
-a,
-.green {
-  text-decoration: none;
-  color: hsla(160, 100%, 37%, 1);
-  transition: 0.4s;
-  padding: 3px;
+.viewport {
+  position: relative;
+  height: calc(100% - 42px);
+  overflow: hidden;
+  background: #111;
 }
 
-@media (hover: hover) {
-  a:hover {
-    background-color: hsla(160, 100%, 37%, 0.2);
-  }
+.world {
+  position: absolute;
+  left: 0;
+  top: 0;
+  background-color: #718052;
+  background-image: linear-gradient(#68774b 1px, transparent 1px), linear-gradient(90deg, #68774b 1px, transparent 1px);
+  background-size: 50px 50px;
+  border: 3px solid #a89b71;
 }
 
-@media (min-width: 1024px) {
-  body {
-    display: flex;
-    place-items: center;
-  }
+.axis { position: absolute; background: #596540; }
+.horizontal { left: 0; top: 50%; width: 100%; height: 2px; }
+.vertical { left: 50%; top: 0; width: 2px; height: 100%; }
 
-  #project {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    padding: 0 2rem;
-  }
+.origin {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  padding: 3px 5px;
+  color: #20251d;
+  background: #b9ad7f;
+  transform: translate(6px, 6px);
 }
