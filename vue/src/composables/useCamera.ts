@@ -26,8 +26,8 @@ export const useCamera = (viewport: Ref<HTMLElement | null>) => {
   const update = (time: number) => {
     const seconds = Math.min((time - previousTime) / 1000, 0.05)
     previousTime = time
-    let horizontal = Number(keys.has('d') || keys.has('arrowright')) - Number(keys.has('a') || keys.has('arrowleft'))
-    let vertical = Number(keys.has('s') || keys.has('arrowdown')) - Number(keys.has('w') || keys.has('arrowup'))
+    let horizontal = Number(keys.has('KeyD') || keys.has('ArrowRight')) - Number(keys.has('KeyA') || keys.has('ArrowLeft'))
+    let vertical = Number(keys.has('KeyS') || keys.has('ArrowDown')) - Number(keys.has('KeyW') || keys.has('ArrowUp'))
 
     if (pointer) {
       horizontal += Number(pointer.x > viewport.value!.clientWidth - edgeSize) - Number(pointer.x < edgeSize)
@@ -42,14 +42,26 @@ export const useCamera = (viewport: Ref<HTMLElement | null>) => {
 
   const setPointer = (x: number, y: number) => { pointer = { x, y } }
   const clearPointer = () => { pointer = null }
-  const keyDown = (event: KeyboardEvent) => keys.add(event.key.toLowerCase())
-  const keyUp = (event: KeyboardEvent) => keys.delete(event.key.toLowerCase())
+  const controlKeys = new Set([
+    'KeyW', 'KeyA', 'KeyS', 'KeyD',
+    'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight',
+  ])
+  const keyDown = (event: KeyboardEvent) => {
+    if (event.ctrlKey || event.metaKey || event.altKey) return
+    if ((event.target as HTMLElement).closest?.('input, textarea, [contenteditable]')) return
+    if (!controlKeys.has(event.code)) return
+    event.preventDefault()
+    keys.add(event.code)
+  }
+  const keyUp = (event: KeyboardEvent) => keys.delete(event.code)
+  const clearKeys = () => keys.clear()
 
   onMounted(() => {
     center()
     window.addEventListener('keydown', keyDown)
     window.addEventListener('keyup', keyUp)
     window.addEventListener('resize', clamp)
+    window.addEventListener('blur', clearKeys)
     frame = requestAnimationFrame(update)
   })
 
@@ -57,6 +69,7 @@ export const useCamera = (viewport: Ref<HTMLElement | null>) => {
     window.removeEventListener('keydown', keyDown)
     window.removeEventListener('keyup', keyUp)
     window.removeEventListener('resize', clamp)
+    window.removeEventListener('blur', clearKeys)
     cancelAnimationFrame(frame)
   })
 
