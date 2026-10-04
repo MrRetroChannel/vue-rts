@@ -8,7 +8,7 @@ export type Point = {
   y: number
 }
 
-export const screenToWorld = (x: number, y: number): Point => ({
-  x: Math.round(x - world.width / 2),
-  y: Math.round(world.height / 2 - y),
+export const screenToWorld = (x: number, y: number, camera: Point): Point => ({
+  x: Math.round(x + camera.x - world.width / 2),
+  y: Math.round(world.height / 2 - y - camera.y),
 })

@@ -17,6 +17,8 @@
   height: calc(100% - 42px);
   overflow: hidden;
   background: #111;
+  cursor: crosshair;
+  user-select: none;
 }
 
 .world {
