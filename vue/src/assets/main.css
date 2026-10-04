@@ -1,9 +1,14 @@
 @import './base.css';
 
-.game { height: 100%; }
+.game {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
 
 .topbar {
   height: 42px;
+  flex-shrink: 0;
   padding: 0 16px;
   display: flex;
   align-items: center;
@@ -14,10 +19,10 @@
 
 .viewport {
   position: relative;
-  height: calc(100% - 42px);
+  flex: 1;
+  min-height: 0;
   overflow: hidden;
   background: #111;
-  cursor: crosshair;
   user-select: none;
 }
 
@@ -26,8 +31,6 @@
   left: 0;
   top: 0;
   background-color: #718052;
-  background-image: linear-gradient(#68774b 1px, transparent 1px), linear-gradient(90deg, #68774b 1px, transparent 1px);
-  background-size: 50px 50px;
   border: 3px solid #a89b71;
 }
 
@@ -42,5 +45,33 @@
   padding: 3px 5px;
   color: #20251d;
   background: #b9ad7f;
-  transform: translate(6px, 6px);
+  margin: 6px 0 0 6px;
+}
+
+.entity {
+  position: absolute;
+  padding: 0;
+  color: #eee4c9;
+  border: 2px solid #20251d;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.entity.selected {
+  outline: 3px solid #f0d84a;
+  outline-offset: 3px;
+}
+
+.entity.building {
+  border-radius: 3px;
+  font-size: 32px;
+}
+
+.destination {
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  border: 2px solid #f0d84a;
+  border-radius: 50%;
+  pointer-events: none;
 }
