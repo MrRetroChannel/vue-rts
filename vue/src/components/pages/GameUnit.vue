@@ -41,9 +41,9 @@ const targetScreen = computed(() => worldToScreen(props.unit.targetX, props.unit
 <style scoped>
 .unit {
   cursor: pointer;
-}
 
-.unit:focus:not(:focus-visible) {
-  outline: none;
+  &:focus:not(:focus-visible) {
+    outline: none;
+  }
 }
 </style>
