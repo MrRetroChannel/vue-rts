@@ -5,14 +5,14 @@ export const gridSize = 40
 export const tileWidth = 64
 export const tileHeight = 32
 
-export function worldToScreen(x: number, y: number) {
+export const worldToScreen = (x: number, y: number) => {
     return {
         x: ((x - y) / gridSize) * tileWidth / 2,
         y: ((x + y) / gridSize) * tileHeight / 2,
     }
 }
 
-export function screenToWorld(x: number, y: number) {
+export const screenToWorld = (x: number, y: number) => {
     return {
         x: (x / tileWidth + y / tileHeight) * gridSize,
         y: (y / tileHeight - x / tileWidth) * gridSize,

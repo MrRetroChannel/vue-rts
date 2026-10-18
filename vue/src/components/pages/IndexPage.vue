@@ -26,7 +26,7 @@ import { worldWidth, worldHeight, gridSize } from '@/game/map'
 
 const unit = reactive(new Unit(80, 80, 150))
 
-function onCommand(x: number, y: number) {
+const onCommand = (x: number, y: number) => {
   if (unit.selected) unit.moveTo(x, y)
 }
 </script>

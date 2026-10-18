@@ -67,7 +67,7 @@ const emit = defineEmits<{
 const xLabel = worldToScreen(160, 0)
 const yLabel = worldToScreen(0, 160)
 
-function onContextMenu(event: MouseEvent) {
+const onContextMenu = (event: MouseEvent) => {
   const svg = event.currentTarget as SVGSVGElement
   const matrix = svg.getScreenCTM()
   if (!matrix) return
@@ -90,7 +90,7 @@ const cameraKeys = ['KeyW', 'KeyA', 'KeyS', 'KeyD', 'ArrowUp', 'ArrowLeft', 'Arr
 let animationFrame = 0
 let previousTime = 0
 
-function onKeyDown(event: KeyboardEvent) {
+const onKeyDown = (event: KeyboardEvent) => {
   if (!cameraKeys.includes(event.code) || event.ctrlKey || event.metaKey || event.altKey) return
   if (event.target instanceof HTMLElement && event.target.closest('input, textarea, select, [contenteditable]')) return
 
@@ -98,15 +98,15 @@ function onKeyDown(event: KeyboardEvent) {
   pressedKeys.add(event.code)
 }
 
-function onKeyUp(event: KeyboardEvent) {
+const onKeyUp = (event: KeyboardEvent) => {
   pressedKeys.delete(event.code)
 }
 
-function clearKeys() {
+const clearKeys = () => {
   pressedKeys.clear()
 }
 
-function updateFrame(time: number) {
+const updateFrame = (time: number) => {
   // Clamp the delta to avoid a jump after an inactive tab.
   const delta = Math.max(0, Math.min((time - previousTime) / 1000, 0.05))
   previousTime = time
@@ -139,7 +139,7 @@ onUnmounted(() => {
 })
 </script>
 
-<style scoped>
+<style scoped lang="scss">
 .field-viewport {
   position: relative;
   height: clamp(320px, 70vh, 720px);
@@ -147,12 +147,12 @@ onUnmounted(() => {
   overflow: clip;
   border: 1px solid #66805b;
   background: #243421;
-}
 
-.game-world {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
+  .game-world {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+  }
 }
 </style>

@@ -38,12 +38,12 @@ const unitScreen = computed(() => worldToScreen(props.unit.x, props.unit.y))
 const targetScreen = computed(() => worldToScreen(props.unit.targetX, props.unit.targetY))
 </script>
 
-<style scoped>
+<style scoped lang="scss">
 .unit {
   cursor: pointer;
-}
 
-.unit:focus:not(:focus-visible) {
-  outline: none;
+  &:focus:not(:focus-visible) {
+    outline: none;
+  }
 }
 </style>
