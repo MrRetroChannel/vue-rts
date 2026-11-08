@@ -9,6 +9,8 @@ export type MapObject = {
   x: number
   y: number
   radius: number
+  maxHealth: number
+  health: number
 }
 
 type Place = {

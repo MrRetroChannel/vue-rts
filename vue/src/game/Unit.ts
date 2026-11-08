@@ -38,4 +38,9 @@ export class Unit {
         }
         return this.x === targetX && this.y === targetY
     }
+
+    maxHealth = 100
+    health = 100
+    power = 12
+    attackSpeed = 1
 }

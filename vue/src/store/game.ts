@@ -19,7 +19,7 @@ export default {
       new Unit(4, -200, 280, 130, 'water'),
     ],
     objects: [
-      { id: 1, x: 160, y: 80, radius: 17 },
+      { id: 1, x: 160, y: 80, radius: 17, maxHealth: 250, health: 250 },
     ],
     events: [],
   }),
