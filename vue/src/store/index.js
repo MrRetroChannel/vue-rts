@@ -1,6 +1,7 @@
 import { createStore } from 'vuex'
 import list from './list'
 import game from './game'
+import commandQueue from './commandQueue'
 
 const MUTATIONS = {
   INCREMENT: 'INCREMENT',
@@ -40,5 +41,6 @@ export default createStore({
   modules: {
     list,
     game,
+    commandQueue,
   }
 })

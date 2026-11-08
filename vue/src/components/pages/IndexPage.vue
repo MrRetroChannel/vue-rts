@@ -3,7 +3,7 @@
     <h1>Игровое поле</h1>
     <p>Карта {{ worldWidth }} × {{ worldHeight }} · шаг сетки {{ gridSize }}</p>
     <p>Камера: WASD или стрелки, масштаб: колесо мыши.</p>
-    <p>ЛКМ по персонажу — выбрать, рамка мышью — выбрать группу, ПКМ — идти к точке.</p>
+    <p>ЛКМ по персонажу — выбрать, рамка мышью — выбрать группу, ПКМ — идти к точке, Shift+ПКМ — добавить команду в очередь.</p>
 
     <GameMap
         @tick="nextFrame"
@@ -41,7 +41,16 @@ const objects = computed(() => store.state.game.objects as MapObject[])
 const events = computed(() => store.state.game.events as MoveEvent[])
 
 const nextFrame = (delta: number) => {
+  const activeBefore = events.value.map(event => event.unitId)
   store.commit('game/nextFrame', delta)
+  const activeAfter = new Set(events.value.map(event => event.unitId))
+  activeBefore.forEach(id => {
+    if (activeAfter.has(id)) return
+    const next = (store.state.commandQueue.byUnit[id] as MoveEvent[] | undefined)?.[0]
+    if (!next) return
+    store.commit('commandQueue/shift', id)
+    store.commit('game/setMoveEvents', [next])
+  })
 }
 
 const clearSelection = () => {
@@ -61,7 +70,7 @@ const selectArea = (left: number, top: number, right: number, bottom: number) =>
   store.commit('game/selectUnits', ids)
 }
 
-const onCommand = (x: number, y: number) => {
+const onCommand = (x: number, y: number, queue: boolean) => {
   const selected = units.value.filter(unit => unit.selected)
   if (!selected.length) return
 
@@ -89,6 +98,17 @@ const onCommand = (x: number, y: number) => {
       y: Math.max(-worldHeight / 2, Math.min(worldHeight / 2, target.y)),
     }
   })
-  store.commit('game/setMoveEvents', moves)
+  if (queue) {
+    moves.forEach(move => {
+      if (events.value.some(event => event.unitId === move.unitId)) {
+        store.commit('commandQueue/add', move)
+      } else {
+        store.commit('game/setMoveEvents', [move])
+      }
+    })
+  } else {
+    store.commit('commandQueue/clear', moves.map(move => move.unitId))
+    store.commit('game/setMoveEvents', moves)
+  }
 }
 </script>

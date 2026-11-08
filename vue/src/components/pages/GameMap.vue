@@ -71,7 +71,7 @@ import { waterOutline } from '@/game/terrain'
 
 const emit = defineEmits<{
   tick: [delta: number]
-  command: [x: number, y: number]
+  command: [x: number, y: number, queue: boolean]
   'background-click': []
   'select-area': [left: number, top: number, right: number, bottom: number]
 }>()
@@ -91,6 +91,7 @@ const onContextMenu = (event: MouseEvent) => {
       'command',
       Math.max(-worldWidth / 2, Math.min(worldWidth / 2, target.x)),
       Math.max(-worldHeight / 2, Math.min(worldHeight / 2, target.y)),
+      event.shiftKey,
   )
 }
 
