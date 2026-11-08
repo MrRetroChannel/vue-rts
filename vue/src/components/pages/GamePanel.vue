@@ -23,14 +23,34 @@
         <button type="button" @click="emit('spawn')">Создать персонажа</button>
       </div>
     </section>
+    <section v-if="units.length">
+      <h2 v-if="units.length === 1">Персонаж #{{ units[0].id }}</h2>
+      <h2 v-else>Выбрано персонажей: {{ units.length }}</h2>
+      <dl v-if="units.length === 1">
+        <dt>Здоровье</dt>
+        <dd>{{ units[0].health }}/{{ units[0].maxHealth }}</dd>
+        <dt>Сила</dt>
+        <dd>{{ units[0].power }}</dd>
+        <dt>Скорость</dt>
+        <dd>{{ units[0].speed }}</dd>
+        <dt>Скорость атаки</dt>
+        <dd>{{ units[0].attackSpeed }}</dd>
+        <dt>Местность</dt>
+        <dd>{{ units[0].terrain === 'water' ? 'вода' : 'суша' }}</dd>
+      </dl>
+      <div class="buttons">
+        <button type="button" class="danger" @click="emit('destroy')">Самоуничтожение</button>
+      </div>
+    </section>
   </nav>
 </template>
 
 <script setup lang="ts">
 import type { MapObject } from '@/game/occupancy'
+import type { Unit } from '@/game/Unit'
 
-defineProps<{ buildSize: number | null; building?: MapObject }>()
-const emit = defineEmits<{ build: [size: number]; 'cancel-build': []; spawn: [] }>()
+defineProps<{ buildSize: number | null; building?: MapObject; units: Unit[] }>()
+const emit = defineEmits<{ build: [size: number]; 'cancel-build': []; spawn: []; destroy: [] }>()
 
 const buildingSizes = [1, 2, 3, 4]
 </script>
@@ -55,6 +75,17 @@ const buildingSizes = [1, 2, 3, 4]
     margin: 0 0 8px;
   }
 
+  dl {
+    display: grid;
+    grid-template-columns: auto auto;
+    gap: 2px 12px;
+    margin: 0 0 8px;
+  }
+
+  dd {
+    margin: 0;
+  }
+
   .buttons {
     display: flex;
     flex-wrap: wrap;
@@ -71,6 +102,11 @@ const buildingSizes = [1, 2, 3, 4]
     &.active {
       border-color: #ffe08a;
       color: #ffe08a;
+    }
+
+    &.danger {
+      border-color: #e65a50;
+      color: #ffb3ad;
     }
   }
 }

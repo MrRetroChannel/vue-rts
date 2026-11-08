@@ -39,9 +39,11 @@
     <GamePanel
         :build-size="buildSize"
         :building="selectedObject"
+        :units="selectedUnits"
         @build="size => buildSize = size"
         @cancel-build="buildSize = null"
         @spawn="spawnUnit"
+        @destroy="destroySelected"
     />
 
     <RouterLink :to="{ name: $routes.EXAMPLE }">Пример Vuex</RouterLink>
@@ -63,6 +65,7 @@ const store = useStore()
 const units = computed(() => store.state.game.units as Unit[])
 const objects = computed(() => store.state.game.objects as MapObject[])
 const events = computed(() => store.state.game.events as MoveEvent[])
+const selectedUnits = computed(() => units.value.filter(unit => unit.selected))
 const selectedObject = computed(() => objects.value.find(object => object.id === store.state.game.selectedObjectId))
 
 const nextFrame = (delta: number) => {
@@ -110,6 +113,12 @@ const selectObject = (id: number) => {
 
 const spawnUnit = () => {
   if (selectedObject.value) store.commit('game/spawnUnit', selectedObject.value.id)
+}
+
+const destroySelected = () => {
+  const ids = selectedUnits.value.map(unit => unit.id)
+  store.commit('commandQueue/clear', ids)
+  store.commit('game/destroyUnits', ids)
 }
 
 const selectArea = (left: number, top: number, right: number, bottom: number) => {

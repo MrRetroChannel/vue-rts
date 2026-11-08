@@ -68,6 +68,10 @@ export default {
       if (!point) return
       state.units.push(new Unit(state.nextUnitId++, point.x, point.y, 140))
     },
+    destroyUnits: (state: GameState, ids: number[]) => {
+      state.units = state.units.filter(unit => !ids.includes(unit.id))
+      state.events = state.events.filter(event => !ids.includes(event.unitId))
+    },
     setMoveEvents: (state: GameState, moves: MoveEvent[]) => {
       planMoves(state, moves)
     },

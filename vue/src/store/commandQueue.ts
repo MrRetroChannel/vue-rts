@@ -13,7 +13,7 @@ export default {
       state.byUnit[id]?.shift()
     },
     clear: (state: QueueState, ids: number[]) => {
-      ids.forEach(id => state.byUnit[id] = [])
+      ids.forEach(id => delete state.byUnit[id])
     },
   },
 }
