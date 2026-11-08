@@ -3,7 +3,7 @@
     <h1>Игровое поле</h1>
     <p>Карта {{ worldWidth }} × {{ worldHeight }} · шаг сетки {{ gridSize }}</p>
     <p>Камера: WASD или стрелки, масштаб: колесо мыши.</p>
-    <p>Здания строятся из панели навигации под картой. ЛКМ по зданию — выбрать и создавать персонажей, ЛКМ по персонажу — выбрать, рамка мышью — выбрать группу, ПКМ — идти к точке, Shift+ПКМ — добавить команду в очередь.</p>
+    <p>Здания строятся из панели навигации под картой. ЛКМ по зданию — выбрать и создавать персонажей, ЛКМ по персонажу — выбрать, рамка мышью — выбрать группу, Shift+ЛКМ или Shift+рамка — добавить к выделению, ПКМ — идти к точке, Shift+ПКМ — добавить команду в очередь.</p>
 
     <GameMap
         @tick="nextFrame"
@@ -24,7 +24,7 @@
           :key="unit.id"
           :unit="unit"
           :move-event="events.find(event => event.unitId === unit.id)"
-          @select="selectUnit(unit.id)"
+          @select="additive => selectUnit(unit.id, additive)"
       />
       <polygon
           v-if="ghost"
@@ -95,16 +95,23 @@ const onPointerMove = (x: number, y: number) => {
   pointer.value = { x, y }
 }
 
-const onBackgroundClick = (x: number, y: number) => {
+const onBackgroundClick = (x: number, y: number, additive: boolean) => {
   if (buildSize.value) {
     store.commit('game/placeBuilding', { ...snapObject(x, y, buildSize.value), size: buildSize.value })
     return
   }
-  store.commit('game/selectUnits', [])
+  if (!additive) store.commit('game/selectUnits', [])
 }
 
-const selectUnit = (id: number) => {
-  store.commit('game/selectUnits', [id])
+const selectUnit = (id: number, additive: boolean) => {
+  const ids = selectedUnits.value.map(unit => unit.id)
+  if (!additive) {
+    store.commit('game/selectUnits', [id])
+  } else if (ids.includes(id)) {
+    store.commit('game/selectUnits', ids.filter(selectedId => selectedId !== id))
+  } else {
+    store.commit('game/selectUnits', [...ids, id])
+  }
 }
 
 const selectObject = (id: number) => {
@@ -121,13 +128,14 @@ const destroySelected = () => {
   store.commit('game/destroyUnits', ids)
 }
 
-const selectArea = (left: number, top: number, right: number, bottom: number) => {
+const selectArea = (left: number, top: number, right: number, bottom: number, additive: boolean) => {
   const ids = units.value.filter(unit => {
     const point = worldToScreen(unit.x, unit.y)
     return point.x >= left && point.x <= right
       && point.y - 10 >= top && point.y - 10 <= bottom
   }).map(unit => unit.id)
-  store.commit('game/selectUnits', ids)
+  const previous = additive ? selectedUnits.value.map(unit => unit.id) : []
+  store.commit('game/selectUnits', [...new Set([...previous, ...ids])])
 }
 
 const onCommand = (x: number, y: number, queue: boolean) => {

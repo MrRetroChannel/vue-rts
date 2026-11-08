@@ -17,9 +17,9 @@
       aria-label="Персонаж"
       :aria-pressed="unit.selected"
       tabindex="0"
-      @click.stop="emit('select')"
-      @keydown.enter.stop.prevent="emit('select')"
-      @keydown.space.stop.prevent="emit('select')"
+      @click.stop="emit('select', $event.shiftKey)"
+      @keydown.enter.stop.prevent="emit('select', $event.shiftKey)"
+      @keydown.space.stop.prevent="emit('select', $event.shiftKey)"
   >
     <ellipse v-if="unit.selected" rx="18" ry="9" fill="none" stroke="#ffe08a" stroke-width="2" />
     <circle cy="-10" :r="UNIT_RADIUS - 1" :fill="unit.terrain === 'water' ? '#8dd7ef' : '#ffd376'" stroke="#493618" stroke-width="2" />
@@ -33,7 +33,7 @@ import { UNIT_RADIUS } from '@/game/occupancy'
 import { worldToScreen } from '@/game/map'
 
 const props = defineProps<{ unit: Unit; moveEvent?: MoveEvent }>()
-const emit = defineEmits<{ select: [] }>()
+const emit = defineEmits<{ select: [additive: boolean] }>()
 
 const unitScreen = computed(() => worldToScreen(props.unit.x, props.unit.y))
 const targetScreen = computed(() => worldToScreen(

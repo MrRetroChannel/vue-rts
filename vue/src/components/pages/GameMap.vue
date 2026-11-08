@@ -72,9 +72,9 @@ import { waterOutline } from '@/game/terrain'
 const emit = defineEmits<{
   tick: [delta: number]
   command: [x: number, y: number, queue: boolean]
-  'background-click': [x: number, y: number]
+  'background-click': [x: number, y: number, additive: boolean]
   'pointer-move': [x: number, y: number]
-  'select-area': [left: number, top: number, right: number, bottom: number]
+  'select-area': [left: number, top: number, right: number, bottom: number, additive: boolean]
 }>()
 
 const xLabel = worldToScreen(160, 0)
@@ -90,7 +90,7 @@ const toWorld = (clientX: number, clientY: number) => {
 
 const onClick = (event: MouseEvent) => {
   const target = toWorld(event.clientX, event.clientY)
-  if (target) emit('background-click', target.x, target.y)
+  if (target) emit('background-click', target.x, target.y, event.shiftKey)
 }
 
 const onContextMenu = (event: MouseEvent) => {
@@ -166,7 +166,7 @@ const onMouseUp = (event: MouseEvent) => {
       const first = new DOMPoint(start.clientX, start.clientY).matrixTransform(inverse)
       const last = new DOMPoint(event.clientX, event.clientY).matrixTransform(inverse)
       emit('select-area', Math.min(first.x, last.x), Math.min(first.y, last.y),
-        Math.max(first.x, last.x), Math.max(first.y, last.y))
+        Math.max(first.x, last.x), Math.max(first.y, last.y), event.shiftKey)
     }
     suppressClick = true
     window.setTimeout(() => suppressClick = false, 0)
