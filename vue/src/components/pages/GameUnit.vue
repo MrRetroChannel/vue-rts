@@ -22,7 +22,7 @@
       @keydown.space.stop.prevent="emit('select')"
   >
     <ellipse v-if="unit.selected" rx="18" ry="9" fill="none" stroke="#ffe08a" stroke-width="2" />
-    <circle cy="-10" :r="UNIT_RADIUS - 1" fill="#ffd376" stroke="#493618" stroke-width="2" />
+    <circle cy="-10" :r="UNIT_RADIUS - 1" :fill="unit.terrain === 'water' ? '#8dd7ef' : '#ffd376'" stroke="#493618" stroke-width="2" />
   </g>
 </template>
 

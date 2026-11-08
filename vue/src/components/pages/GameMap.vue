@@ -30,6 +30,7 @@
           stroke="#b9cba5"
           stroke-width="2"
       />
+      <polygon :points="waterOutline" fill="#426f88" stroke="#8db9ca" stroke-width="2" />
       <line
           v-for="(line, index) in gridLines"
           :key="index"
@@ -66,6 +67,7 @@ import {
   mapOutline,
   gridLines,
 } from '@/game/map'
+import { waterOutline } from '@/game/terrain'
 
 const emit = defineEmits<{
   tick: [delta: number]

@@ -1,3 +1,5 @@
+import type { Terrain } from './terrain'
+
 export type MoveEvent = {
     unitId: number
     x: number
@@ -9,13 +11,15 @@ export class Unit {
     x: number
     y: number
     speed: number
+    terrain: Terrain
     selected = false
 
-    constructor(id: number, x: number, y: number, speed: number) {
+    constructor(id: number, x: number, y: number, speed: number, terrain: Terrain = 'land') {
         this.id = id
         this.x = x
         this.y = y
         this.speed = speed
+        this.terrain = terrain
     }
 
     update(delta: number, targetX: number, targetY: number, canMove: (x: number, y: number) => boolean) {

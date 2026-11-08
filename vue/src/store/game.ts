@@ -1,5 +1,6 @@
 import { Unit, type MoveEvent } from '@/game/Unit'
 import { UNIT_RADIUS, canOccupy, findFreePosition, type MapObject } from '@/game/occupancy'
+import { getTerrain } from '@/game/terrain'
 
 type GameState = {
   units: Unit[]
@@ -14,6 +15,7 @@ export default {
       new Unit(1, 80, 80, 150),
       new Unit(2, -240, -120, 110),
       new Unit(3, 260, -100, 190),
+      new Unit(4, -200, 280, 130, 'water'),
     ],
     objects: [
       { id: 1, x: 160, y: 80, radius: 17 },
@@ -30,7 +32,10 @@ export default {
       const accepted: MoveEvent[] = []
 
       moves.forEach(move => {
-        const point = findFreePosition(move.x, move.y, state.units, state.objects, ids, reserved)
+        const unit = state.units.find(unit => unit.id === move.unitId)
+        if (!unit) return
+        const allowed = (x: number, y: number) => getTerrain(x, y) === unit.terrain
+        const point = findFreePosition(move.x, move.y, state.units, state.objects, ids, reserved, allowed)
         if (!point) return
         accepted.push({ unitId: move.unitId, x: point.x, y: point.y })
         reserved.push({ x: point.x, y: point.y, radius: UNIT_RADIUS })
@@ -44,7 +49,8 @@ export default {
       state.events = state.events.filter(event => {
         const unit = state.units.find(unit => unit.id === event.unitId)
         return unit ? !unit.update(delta, event.x, event.y, (x, y) =>
-          canOccupy(x, y, UNIT_RADIUS, state.units, state.objects, [unit.id])) : false
+          getTerrain(x, y) === unit.terrain
+          && canOccupy(x, y, UNIT_RADIUS, state.units, state.objects, [unit.id])) : false
       })
     },
   },

@@ -45,6 +45,7 @@ export const findFreePosition = (
   objects: MapObject[],
   ignoredUnitIds: number[],
   reserved: Place[],
+  allowed: (x: number, y: number) => boolean = () => true,
 ) => {
   const center = worldToScreen(x, y)
   const step = UNIT_RADIUS * 2
@@ -56,6 +57,7 @@ export const findFreePosition = (
 
         const point = screenToWorld(center.x + dx * step, center.y + dy * step)
         if (Math.abs(point.x) > worldWidth / 2 || Math.abs(point.y) > worldHeight / 2) continue
+        if (!allowed(point.x, point.y)) continue
         if (canOccupy(point.x, point.y, UNIT_RADIUS, units, objects, ignoredUnitIds, reserved)) {
           return point
         }
