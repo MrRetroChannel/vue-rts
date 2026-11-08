@@ -3,7 +3,7 @@
     <h1>Игровое поле</h1>
     <p>Карта {{ worldWidth }} × {{ worldHeight }} · шаг сетки {{ gridSize }}</p>
     <p>Камера: WASD или стрелки, масштаб: колесо мыши.</p>
-    <p>Здания строятся из панели навигации под картой. ЛКМ по персонажу — выбрать, рамка мышью — выбрать группу, ПКМ — идти к точке, Shift+ПКМ — добавить команду в очередь.</p>
+    <p>Здания строятся из панели навигации под картой. ЛКМ по зданию — выбрать и создавать персонажей, ЛКМ по персонажу — выбрать, рамка мышью — выбрать группу, ПКМ — идти к точке, Shift+ПКМ — добавить команду в очередь.</p>
 
     <GameMap
         @tick="nextFrame"
@@ -12,7 +12,13 @@
         @select-area="selectArea"
         @command="onCommand"
     >
-      <GameObject v-for="object in objects" :key="object.id" :object="object" />
+      <GameObject
+          v-for="object in objects"
+          :key="object.id"
+          :object="object"
+          :selected="object.id === selectedObject?.id"
+          @select="selectObject(object.id)"
+      />
       <GameUnit
           v-for="unit in units"
           :key="unit.id"
@@ -32,8 +38,10 @@
 
     <GamePanel
         :build-size="buildSize"
+        :building="selectedObject"
         @build="size => buildSize = size"
         @cancel-build="buildSize = null"
+        @spawn="spawnUnit"
     />
 
     <RouterLink :to="{ name: $routes.EXAMPLE }">Пример Vuex</RouterLink>
@@ -55,6 +63,7 @@ const store = useStore()
 const units = computed(() => store.state.game.units as Unit[])
 const objects = computed(() => store.state.game.objects as MapObject[])
 const events = computed(() => store.state.game.events as MoveEvent[])
+const selectedObject = computed(() => objects.value.find(object => object.id === store.state.game.selectedObjectId))
 
 const nextFrame = (delta: number) => {
   const activeBefore = events.value.map(event => event.unitId)
@@ -93,6 +102,14 @@ const onBackgroundClick = (x: number, y: number) => {
 
 const selectUnit = (id: number) => {
   store.commit('game/selectUnits', [id])
+}
+
+const selectObject = (id: number) => {
+  store.commit('game/selectObject', id)
+}
+
+const spawnUnit = () => {
+  if (selectedObject.value) store.commit('game/spawnUnit', selectedObject.value.id)
 }
 
 const selectArea = (left: number, top: number, right: number, bottom: number) => {

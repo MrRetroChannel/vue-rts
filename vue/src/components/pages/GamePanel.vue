@@ -16,12 +16,21 @@
       </div>
       <p v-if="buildSize">ЛКМ по карте — поставить здание, ПКМ — отмена.</p>
     </section>
+    <section v-if="building">
+      <h2>Здание {{ building.size }}×{{ building.size }}</h2>
+      <p>Здоровье: {{ building.health }}/{{ building.maxHealth }}</p>
+      <div class="buttons">
+        <button type="button" @click="emit('spawn')">Создать персонажа</button>
+      </div>
+    </section>
   </nav>
 </template>
 
 <script setup lang="ts">
-defineProps<{ buildSize: number | null }>()
-const emit = defineEmits<{ build: [size: number]; 'cancel-build': [] }>()
+import type { MapObject } from '@/game/occupancy'
+
+defineProps<{ buildSize: number | null; building?: MapObject }>()
+const emit = defineEmits<{ build: [size: number]; 'cancel-build': []; spawn: [] }>()
 
 const buildingSizes = [1, 2, 3, 4]
 </script>
@@ -43,7 +52,7 @@ const buildingSizes = [1, 2, 3, 4]
   }
 
   p {
-    margin: 8px 0 0;
+    margin: 0 0 8px;
   }
 
   .buttons {

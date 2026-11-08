@@ -7,7 +7,9 @@ type GameState = {
   units: Unit[]
   objects: MapObject[]
   events: MoveEvent[]
+  selectedObjectId: number | null
   nextObjectId: number
+  nextUnitId: number
 }
 
 const planMoves = (state: GameState, moves: MoveEvent[]) => {
@@ -44,11 +46,27 @@ export default {
       { id: 1, x: 160, y: 80, size: 2, maxHealth: 250, health: 250 },
     ],
     events: [],
+    selectedObjectId: null,
     nextObjectId: 2,
+    nextUnitId: 5,
   }),
   mutations: {
     selectUnits: (state: GameState, ids: number[]) => {
       state.units.forEach(unit => unit.selected = ids.includes(unit.id))
+      state.selectedObjectId = null
+    },
+    selectObject: (state: GameState, id: number) => {
+      state.units.forEach(unit => unit.selected = false)
+      state.selectedObjectId = id
+    },
+    spawnUnit: (state: GameState, objectId: number) => {
+      const object = state.objects.find(object => object.id === objectId)
+      if (!object) return
+      const reserved = state.events.map(event => ({ x: event.x, y: event.y, radius: UNIT_RADIUS }))
+      const point = findFreePosition(object.x, object.y, state.units, state.objects, [], reserved,
+        (x, y) => getTerrain(x, y) === 'land')
+      if (!point) return
+      state.units.push(new Unit(state.nextUnitId++, point.x, point.y, 140))
     },
     setMoveEvents: (state: GameState, moves: MoveEvent[]) => {
       planMoves(state, moves)
