@@ -1,38 +1,37 @@
+export type MoveEvent = {
+    unitId: number
+    x: number
+    y: number
+}
+
 export class Unit {
     id: number
     x: number
     y: number
     speed: number
     selected = false
-    targetX: number
-    targetY: number
 
     constructor(id: number, x: number, y: number, speed: number) {
         this.id = id
         this.x = x
         this.y = y
         this.speed = speed
-        this.targetX = x
-        this.targetY = y
     }
 
-    moveTo(x: number, y: number) {
-        this.targetX = x
-        this.targetY = y
-    }
-
-    update(delta: number) {
-        const dx = this.targetX - this.x
-        const dy = this.targetY - this.y
+    update(delta: number, targetX: number, targetY: number) {
+        const dx = targetX - this.x
+        const dy = targetY - this.y
         const distance = Math.hypot(dx, dy)
         const step = this.speed * delta
 
         if (distance <= step) {
-            this.x = this.targetX
-            this.y = this.targetY
+            this.x = targetX
+            this.y = targetY
+            return true
         } else {
             this.x += dx / distance * step
             this.y += dy / distance * step
+            return false
         }
     }
 }

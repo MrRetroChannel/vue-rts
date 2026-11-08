@@ -1,6 +1,6 @@
 <template>
   <ellipse
-      v-if="unit.x !== unit.targetX || unit.y !== unit.targetY"
+      v-if="moveEvent"
       :cx="targetScreen.x"
       :cy="targetScreen.y"
       rx="7"
@@ -28,14 +28,17 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import type { Unit } from '@/game/Unit'
+import type { Unit, MoveEvent } from '@/game/Unit'
 import { worldToScreen } from '@/game/map'
 
-const props = defineProps<{ unit: Unit }>()
+const props = defineProps<{ unit: Unit; moveEvent?: MoveEvent }>()
 const emit = defineEmits<{ select: [] }>()
 
 const unitScreen = computed(() => worldToScreen(props.unit.x, props.unit.y))
-const targetScreen = computed(() => worldToScreen(props.unit.targetX, props.unit.targetY))
+const targetScreen = computed(() => worldToScreen(
+  props.moveEvent?.x ?? props.unit.x,
+  props.moveEvent?.y ?? props.unit.y,
+))
 </script>
 
 <style scoped lang="scss">

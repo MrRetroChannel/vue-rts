@@ -15,6 +15,7 @@
           v-for="unit in units"
           :key="unit.id"
           :unit="unit"
+          :move-event="events.find(event => event.unitId === unit.id)"
           @select="selectUnit(unit.id)"
       />
     </GameMap>
@@ -28,11 +29,12 @@ import { computed } from 'vue'
 import { useStore } from 'vuex'
 import GameMap from '@/components/pages/GameMap.vue'
 import GameUnit from '@/components/pages/GameUnit.vue'
-import type { Unit } from '@/game/Unit'
+import type { Unit, MoveEvent } from '@/game/Unit'
 import { worldWidth, worldHeight, gridSize, worldToScreen, screenToWorld } from '@/game/map'
 
 const store = useStore()
 const units = computed(() => store.state.game.units as Unit[])
+const events = computed(() => store.state.game.events as MoveEvent[])
 
 const nextFrame = (delta: number) => {
   store.commit('game/nextFrame', delta)
@@ -78,6 +80,6 @@ const onCommand = (x: number, y: number) => {
       y: Math.max(-worldHeight / 2, Math.min(worldHeight / 2, target.y)),
     }
   })
-  store.commit('game/moveUnits', moves)
+  store.commit('game/setMoveEvents', moves)
 }
 </script>

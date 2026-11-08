@@ -1,13 +1,8 @@
-import { Unit } from '@/game/Unit'
-
-type UnitMove = {
-  unitId: number
-  x: number
-  y: number
-}
+import { Unit, type MoveEvent } from '@/game/Unit'
 
 type GameState = {
   units: Unit[]
+  events: MoveEvent[]
 }
 
 export default {
@@ -18,19 +13,23 @@ export default {
       new Unit(2, -240, -120, 110),
       new Unit(3, 260, -100, 190),
     ],
+    events: [],
   }),
   mutations: {
     selectUnits: (state: GameState, ids: number[]) => {
       state.units.forEach(unit => unit.selected = ids.includes(unit.id))
     },
-    moveUnits: (state: GameState, moves: UnitMove[]) => {
-      moves.forEach(move => {
-        const unit = state.units.find(unit => unit.id === move.unitId)
-        unit?.moveTo(move.x, move.y)
-      })
+    setMoveEvents: (state: GameState, moves: MoveEvent[]) => {
+      const ids = moves.map(move => move.unitId)
+      state.events = state.events.filter(event => !ids.includes(event.unitId))
+      state.events.push(...moves)
     },
     nextFrame: (state: GameState, delta: number) => {
-      state.units.forEach(unit => unit.update(delta))
+      if (!state.events.length) return
+      state.events = state.events.filter(event => {
+        const unit = state.units.find(unit => unit.id === event.unitId)
+        return unit ? !unit.update(delta, event.x, event.y) : false
+      })
     },
   },
 }
