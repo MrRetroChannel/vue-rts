@@ -6,6 +6,7 @@
       :aria-pressed="selected"
       tabindex="0"
       @click.stop="emit('select')"
+      @contextmenu.stop.prevent="emit('target')"
       @keydown.enter.stop.prevent="emit('select')"
       @keydown.space.stop.prevent="emit('select')"
   >
@@ -26,7 +27,7 @@ import { computed } from 'vue'
 import { objectCorners, type MapObject } from '@/game/occupancy'
 
 const props = defineProps<{ object: MapObject; selected?: boolean }>()
-const emit = defineEmits<{ select: [] }>()
+const emit = defineEmits<{ select: []; target: [] }>()
 const corners = computed(() => objectCorners(props.object))
 const points = computed(() => corners.value.map(point => `${point.x},${point.y}`).join(' '))
 const top = computed(() => corners.value[0])

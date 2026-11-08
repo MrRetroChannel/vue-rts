@@ -3,7 +3,7 @@
     <h1>Игровое поле</h1>
     <p>Карта {{ worldWidth }} × {{ worldHeight }} · шаг сетки {{ gridSize }}</p>
     <p>Камера: WASD или стрелки, масштаб: колесо мыши.</p>
-    <p>Здания строятся из панели навигации под картой. ЛКМ по зданию — выбрать и создавать персонажей, ЛКМ по персонажу — выбрать, рамка мышью — выбрать группу, Shift+ЛКМ или Shift+рамка — добавить к выделению, ПКМ — идти к точке, Shift+ПКМ — добавить команду в очередь.</p>
+    <p>Здания строятся из панели навигации под картой. ЛКМ по зданию — выбрать и создавать персонажей, ЛКМ по персонажу — выбрать, рамка мышью — выбрать группу, Shift+ЛКМ или Shift+рамка — добавить к выделению, ПКМ — идти к точке, ПКМ по персонажу или зданию — атаковать, Shift+ПКМ — добавить команду в очередь.</p>
 
     <GameMap
         @tick="nextFrame"
@@ -18,6 +18,7 @@
           :object="object"
           :selected="object.id === selectedObject?.id"
           @select="selectObject(object.id)"
+          @target="attack({ kind: 'object', id: object.id })"
       />
       <GameUnit
           v-for="unit in units"
@@ -25,6 +26,7 @@
           :unit="unit"
           :move-event="events.find(event => event.unitId === unit.id)"
           @select="additive => selectUnit(unit.id, additive)"
+          @target="attack({ kind: 'unit', id: unit.id })"
       />
       <polygon
           v-if="ghost"
@@ -57,7 +59,7 @@ import GameMap from '@/components/pages/GameMap.vue'
 import GameObject from '@/components/pages/GameObject.vue'
 import GameUnit from '@/components/pages/GameUnit.vue'
 import GamePanel from '@/components/pages/GamePanel.vue'
-import type { Unit, MoveEvent } from '@/game/Unit'
+import type { Unit, MoveEvent, AttackEvent, AttackTarget } from '@/game/Unit'
 import { UNIT_RADIUS, canPlaceObject, objectCorners, snapObject, type MapObject } from '@/game/occupancy'
 import { worldWidth, worldHeight, gridSize, worldToScreen, screenToWorld } from '@/game/map'
 
@@ -65,15 +67,21 @@ const store = useStore()
 const units = computed(() => store.state.game.units as Unit[])
 const objects = computed(() => store.state.game.objects as MapObject[])
 const events = computed(() => store.state.game.events as MoveEvent[])
+const attacks = computed(() => store.state.game.attacks as AttackEvent[])
+const busyIds = () => new Set([...events.value, ...attacks.value].map(event => event.unitId))
 const selectedUnits = computed(() => units.value.filter(unit => unit.selected))
 const selectedObject = computed(() => objects.value.find(object => object.id === store.state.game.selectedObjectId))
 
 const nextFrame = (delta: number) => {
-  const activeBefore = events.value.map(event => event.unitId)
+  const activeBefore = busyIds()
   store.commit('game/nextFrame', delta)
-  const activeAfter = new Set(events.value.map(event => event.unitId))
+  const activeAfter = busyIds()
   activeBefore.forEach(id => {
     if (activeAfter.has(id)) return
+    if (!units.value.some(unit => unit.id === id)) {
+      store.commit('commandQueue/clear', [id])
+      return
+    }
     const next = (store.state.commandQueue.byUnit[id] as MoveEvent[] | undefined)?.[0]
     if (!next) return
     store.commit('commandQueue/shift', id)
@@ -128,6 +136,17 @@ const destroySelected = () => {
   store.commit('game/destroyUnits', ids)
 }
 
+const attack = (target: AttackTarget) => {
+  if (buildSize.value) {
+    buildSize.value = null
+    return
+  }
+  const ids = selectedUnits.value.map(unit => unit.id)
+  if (!ids.length) return
+  store.commit('commandQueue/clear', ids)
+  store.commit('game/attack', { unitIds: ids, target })
+}
+
 const selectArea = (left: number, top: number, right: number, bottom: number, additive: boolean) => {
   const ids = units.value.filter(unit => {
     const point = worldToScreen(unit.x, unit.y)
@@ -172,7 +191,7 @@ const onCommand = (x: number, y: number, queue: boolean) => {
   })
   if (queue) {
     moves.forEach(move => {
-      if (events.value.some(event => event.unitId === move.unitId)) {
+      if (busyIds().has(move.unitId)) {
         store.commit('commandQueue/add', move)
       } else {
         store.commit('game/setMoveEvents', [move])
@@ -180,6 +199,7 @@ const onCommand = (x: number, y: number, queue: boolean) => {
     })
   } else {
     store.commit('commandQueue/clear', moves.map(move => move.unitId))
+    store.commit('game/stopAttacks', moves.map(move => move.unitId))
     store.commit('game/setMoveEvents', moves)
   }
 }

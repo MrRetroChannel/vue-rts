@@ -7,6 +7,17 @@ export type MoveEvent = {
     waypoints?: { x: number; y: number }[]
 }
 
+export type AttackTarget = {
+    kind: 'unit' | 'object'
+    id: number
+}
+
+export type AttackEvent = {
+    unitId: number
+    target: AttackTarget
+    cooldown: number
+}
+
 export class Unit {
     id: number
     x: number
