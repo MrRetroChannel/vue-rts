@@ -18,20 +18,19 @@ export class Unit {
         this.speed = speed
     }
 
-    update(delta: number, targetX: number, targetY: number) {
+    update(delta: number, targetX: number, targetY: number, canMove: (x: number, y: number) => boolean) {
         const dx = targetX - this.x
         const dy = targetY - this.y
         const distance = Math.hypot(dx, dy)
         const step = this.speed * delta
 
-        if (distance <= step) {
-            this.x = targetX
-            this.y = targetY
-            return true
-        } else {
-            this.x += dx / distance * step
-            this.y += dy / distance * step
-            return false
+        const nextX = distance <= step ? targetX : this.x + dx / distance * step
+        const nextY = distance <= step ? targetY : this.y + dy / distance * step
+
+        if (canMove(nextX, nextY)) {
+            this.x = nextX
+            this.y = nextY
         }
+        return this.x === targetX && this.y === targetY
     }
 }

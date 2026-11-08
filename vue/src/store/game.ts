@@ -1,5 +1,5 @@
 import { Unit, type MoveEvent } from '@/game/Unit'
-import type { MapObject } from '@/game/occupancy'
+import { UNIT_RADIUS, canOccupy, findFreePosition, type MapObject } from '@/game/occupancy'
 
 type GameState = {
   units: Unit[]
@@ -26,14 +26,25 @@ export default {
     },
     setMoveEvents: (state: GameState, moves: MoveEvent[]) => {
       const ids = moves.map(move => move.unitId)
+      const reserved: { x: number; y: number; radius: number }[] = []
+      const accepted: MoveEvent[] = []
+
+      moves.forEach(move => {
+        const point = findFreePosition(move.x, move.y, state.units, state.objects, ids, reserved)
+        if (!point) return
+        accepted.push({ unitId: move.unitId, x: point.x, y: point.y })
+        reserved.push({ x: point.x, y: point.y, radius: UNIT_RADIUS })
+      })
+
       state.events = state.events.filter(event => !ids.includes(event.unitId))
-      state.events.push(...moves)
+      state.events.push(...accepted)
     },
     nextFrame: (state: GameState, delta: number) => {
       if (!state.events.length) return
       state.events = state.events.filter(event => {
         const unit = state.units.find(unit => unit.id === event.unitId)
-        return unit ? !unit.update(delta, event.x, event.y) : false
+        return unit ? !unit.update(delta, event.x, event.y, (x, y) =>
+          canOccupy(x, y, UNIT_RADIUS, state.units, state.objects, [unit.id])) : false
       })
     },
   },

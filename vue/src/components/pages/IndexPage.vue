@@ -32,7 +32,7 @@ import GameMap from '@/components/pages/GameMap.vue'
 import GameObject from '@/components/pages/GameObject.vue'
 import GameUnit from '@/components/pages/GameUnit.vue'
 import type { Unit, MoveEvent } from '@/game/Unit'
-import type { MapObject } from '@/game/occupancy'
+import { UNIT_RADIUS, type MapObject } from '@/game/occupancy'
 import { worldWidth, worldHeight, gridSize, worldToScreen, screenToWorld } from '@/game/map'
 
 const store = useStore()
@@ -66,18 +66,23 @@ const onCommand = (x: number, y: number) => {
   if (!selected.length) return
 
   const destination = worldToScreen(x, y)
-  const spacing = 20
+  const spacing = UNIT_RADIUS * 2
   const columns = Math.ceil(Math.sqrt(selected.length))
   const rows = Math.ceil(selected.length / columns)
 
-  const moves = selected.map((unit, index) => {
+  const slots = selected.map((_, index) => {
     const row = Math.floor(index / columns)
     const countInRow = Math.min(columns, selected.length - row * columns)
     const column = index % columns
-    const target = screenToWorld(
-      destination.x + (column - (countInRow - 1) / 2) * spacing,
-      destination.y + (row - (rows - 1) / 2) * spacing,
-    )
+    return {
+      x: destination.x + (column - (countInRow - 1) / 2) * spacing,
+      y: destination.y + (row - (rows - 1) / 2) * spacing,
+    }
+  }).sort((a, b) => a.x - b.x)
+  selected.sort((a, b) => worldToScreen(a.x, a.y).x - worldToScreen(b.x, b.y).x)
+
+  const moves = selected.map((unit, index) => {
+    const target = screenToWorld(slots[index].x, slots[index].y)
     return {
       unitId: unit.id,
       x: Math.max(-worldWidth / 2, Math.min(worldWidth / 2, target.x)),
