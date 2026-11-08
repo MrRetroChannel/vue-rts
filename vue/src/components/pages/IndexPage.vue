@@ -3,11 +3,12 @@
     <h1>Игровое поле</h1>
     <p>Карта {{ worldWidth }} × {{ worldHeight }} · шаг сетки {{ gridSize }}</p>
     <p>Камера: WASD или стрелки, масштаб: колесо мыши.</p>
-    <p>ЛКМ по персонажу — выбрать, рамка мышью — выбрать группу, ПКМ — идти к точке, Shift+ПКМ — добавить команду в очередь.</p>
+    <p>Здания строятся из панели навигации под картой. ЛКМ по персонажу — выбрать, рамка мышью — выбрать группу, ПКМ — идти к точке, Shift+ПКМ — добавить команду в очередь.</p>
 
     <GameMap
         @tick="nextFrame"
-        @background-click="clearSelection"
+        @background-click="onBackgroundClick"
+        @pointer-move="onPointerMove"
         @select-area="selectArea"
         @command="onCommand"
     >
@@ -19,20 +20,35 @@
           :move-event="events.find(event => event.unitId === unit.id)"
           @select="selectUnit(unit.id)"
       />
+      <polygon
+          v-if="ghost"
+          :points="ghostPoints"
+          :fill="ghostValid ? 'rgba(141, 220, 120, 0.35)' : 'rgba(230, 90, 80, 0.35)'"
+          :stroke="ghostValid ? '#8ddc78' : '#e65a50'"
+          stroke-width="2"
+          pointer-events="none"
+      />
     </GameMap>
+
+    <GamePanel
+        :build-size="buildSize"
+        @build="size => buildSize = size"
+        @cancel-build="buildSize = null"
+    />
 
     <RouterLink :to="{ name: $routes.EXAMPLE }">Пример Vuex</RouterLink>
   </main>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useStore } from 'vuex'
 import GameMap from '@/components/pages/GameMap.vue'
 import GameObject from '@/components/pages/GameObject.vue'
 import GameUnit from '@/components/pages/GameUnit.vue'
+import GamePanel from '@/components/pages/GamePanel.vue'
 import type { Unit, MoveEvent } from '@/game/Unit'
-import { UNIT_RADIUS, type MapObject } from '@/game/occupancy'
+import { UNIT_RADIUS, canPlaceObject, objectCorners, snapObject, type MapObject } from '@/game/occupancy'
 import { worldWidth, worldHeight, gridSize, worldToScreen, screenToWorld } from '@/game/map'
 
 const store = useStore()
@@ -53,7 +69,25 @@ const nextFrame = (delta: number) => {
   })
 }
 
-const clearSelection = () => {
+const buildSize = ref<number | null>(null)
+const pointer = ref<{ x: number; y: number } | null>(null)
+const ghost = computed(() => buildSize.value && pointer.value
+  ? { ...snapObject(pointer.value.x, pointer.value.y, buildSize.value), size: buildSize.value }
+  : null)
+const ghostPoints = computed(() => ghost.value
+  ? objectCorners(ghost.value).map(point => `${point.x},${point.y}`).join(' ')
+  : '')
+const ghostValid = computed(() => !!ghost.value && canPlaceObject(ghost.value, units.value, objects.value))
+
+const onPointerMove = (x: number, y: number) => {
+  pointer.value = { x, y }
+}
+
+const onBackgroundClick = (x: number, y: number) => {
+  if (buildSize.value) {
+    store.commit('game/placeBuilding', { ...snapObject(x, y, buildSize.value), size: buildSize.value })
+    return
+  }
   store.commit('game/selectUnits', [])
 }
 
@@ -71,6 +105,10 @@ const selectArea = (left: number, top: number, right: number, bottom: number) =>
 }
 
 const onCommand = (x: number, y: number, queue: boolean) => {
+  if (buildSize.value) {
+    buildSize.value = null
+    return
+  }
   const selected = units.value.filter(unit => unit.selected)
   if (!selected.length) return
 
