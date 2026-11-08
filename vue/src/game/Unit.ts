@@ -4,6 +4,7 @@ export type MoveEvent = {
     unitId: number
     x: number
     y: number
+    waypoints?: { x: number; y: number }[]
 }
 
 export class Unit {

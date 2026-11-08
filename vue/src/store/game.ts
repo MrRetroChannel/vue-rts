@@ -1,6 +1,7 @@
 import { Unit, type MoveEvent } from '@/game/Unit'
 import { UNIT_RADIUS, canOccupy, findFreePosition, type MapObject } from '@/game/occupancy'
 import { getTerrain } from '@/game/terrain'
+import { findPath } from '@/game/pathfinding'
 
 type GameState = {
   units: Unit[]
@@ -37,7 +38,9 @@ export default {
         const allowed = (x: number, y: number) => getTerrain(x, y) === unit.terrain
         const point = findFreePosition(move.x, move.y, state.units, state.objects, ids, reserved, allowed)
         if (!point) return
-        accepted.push({ unitId: move.unitId, x: point.x, y: point.y })
+        const path = findPath({ x: unit.x, y: unit.y }, point, state.objects, unit.terrain)
+        if (!path) return
+        accepted.push({ unitId: move.unitId, x: point.x, y: point.y, waypoints: path })
         reserved.push({ x: point.x, y: point.y, radius: UNIT_RADIUS })
       })
 
@@ -48,9 +51,13 @@ export default {
       if (!state.events.length) return
       state.events = state.events.filter(event => {
         const unit = state.units.find(unit => unit.id === event.unitId)
-        return unit ? !unit.update(delta, event.x, event.y, (x, y) =>
+        if (!unit) return false
+        const target = event.waypoints?.[0] ?? event
+        const arrived = unit.update(delta, target.x, target.y, (x, y) =>
           getTerrain(x, y) === unit.terrain
-          && canOccupy(x, y, UNIT_RADIUS, state.units, state.objects, [unit.id])) : false
+          && canOccupy(x, y, UNIT_RADIUS, state.units, state.objects, [unit.id]))
+        if (arrived && event.waypoints) event.waypoints.shift()
+        return !arrived || !!event.waypoints?.length
       })
     },
   },
