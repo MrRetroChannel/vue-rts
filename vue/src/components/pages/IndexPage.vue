@@ -11,6 +11,7 @@
         @select-area="selectArea"
         @command="onCommand"
     >
+      <GameObject v-for="object in objects" :key="object.id" :object="object" />
       <GameUnit
           v-for="unit in units"
           :key="unit.id"
@@ -28,12 +29,15 @@
 import { computed } from 'vue'
 import { useStore } from 'vuex'
 import GameMap from '@/components/pages/GameMap.vue'
+import GameObject from '@/components/pages/GameObject.vue'
 import GameUnit from '@/components/pages/GameUnit.vue'
 import type { Unit, MoveEvent } from '@/game/Unit'
+import type { MapObject } from '@/game/occupancy'
 import { worldWidth, worldHeight, gridSize, worldToScreen, screenToWorld } from '@/game/map'
 
 const store = useStore()
 const units = computed(() => store.state.game.units as Unit[])
+const objects = computed(() => store.state.game.objects as MapObject[])
 const events = computed(() => store.state.game.events as MoveEvent[])
 
 const nextFrame = (delta: number) => {

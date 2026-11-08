@@ -1,7 +1,9 @@
 import { Unit, type MoveEvent } from '@/game/Unit'
+import type { MapObject } from '@/game/occupancy'
 
 type GameState = {
   units: Unit[]
+  objects: MapObject[]
   events: MoveEvent[]
 }
 
@@ -12,6 +14,9 @@ export default {
       new Unit(1, 80, 80, 150),
       new Unit(2, -240, -120, 110),
       new Unit(3, 260, -100, 190),
+    ],
+    objects: [
+      { id: 1, x: 160, y: 80, radius: 17 },
     ],
     events: [],
   }),
