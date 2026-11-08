@@ -1,4 +1,5 @@
 export class Unit {
+    id: number
     x: number
     y: number
     speed: number
@@ -6,7 +7,8 @@ export class Unit {
     targetX: number
     targetY: number
 
-    constructor(x: number, y: number, speed: number) {
+    constructor(id: number, x: number, y: number, speed: number) {
+        this.id = id
         this.x = x
         this.y = y
         this.speed = speed

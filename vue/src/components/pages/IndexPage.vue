@@ -6,12 +6,17 @@
     <p>ЛКМ по персонажу — выбрать, рамка мышью — выбрать группу, ПКМ — идти к точке.</p>
 
     <GameMap
-        @tick="delta => units.forEach(unit => unit.update(delta))"
+        @tick="nextFrame"
         @background-click="clearSelection"
         @select-area="selectArea"
         @command="onCommand"
     >
-      <GameUnit v-for="(unit, index) in units" :key="index" :unit="unit" @select="selectUnit(unit)" />
+      <GameUnit
+          v-for="unit in units"
+          :key="unit.id"
+          :unit="unit"
+          @select="selectUnit(unit.id)"
+      />
     </GameMap>
 
     <RouterLink :to="{ name: $routes.EXAMPLE }">Пример Vuex</RouterLink>
@@ -19,36 +24,39 @@
 </template>
 
 <script setup lang="ts">
-import { reactive } from 'vue'
+import { computed } from 'vue'
+import { useStore } from 'vuex'
 import GameMap from '@/components/pages/GameMap.vue'
 import GameUnit from '@/components/pages/GameUnit.vue'
-import { Unit } from '@/game/Unit'
+import type { Unit } from '@/game/Unit'
 import { worldWidth, worldHeight, gridSize, worldToScreen, screenToWorld } from '@/game/map'
 
-const units = reactive([
-  new Unit(80, 80, 150),
-  new Unit(-240, -120, 110),
-  new Unit(260, -100, 190),
-])
+const store = useStore()
+const units = computed(() => store.state.game.units as Unit[])
 
-const clearSelection = () => {
-  units.forEach(unit => unit.selected = false)
+const nextFrame = (delta: number) => {
+  store.commit('game/nextFrame', delta)
 }
 
-const selectUnit = (selectedUnit: Unit) => {
-  units.forEach(unit => unit.selected = unit === selectedUnit)
+const clearSelection = () => {
+  store.commit('game/selectUnits', [])
+}
+
+const selectUnit = (id: number) => {
+  store.commit('game/selectUnits', [id])
 }
 
 const selectArea = (left: number, top: number, right: number, bottom: number) => {
-  units.forEach(unit => {
+  const ids = units.value.filter(unit => {
     const point = worldToScreen(unit.x, unit.y)
-    unit.selected = point.x >= left && point.x <= right
+    return point.x >= left && point.x <= right
       && point.y - 10 >= top && point.y - 10 <= bottom
-  })
+  }).map(unit => unit.id)
+  store.commit('game/selectUnits', ids)
 }
 
 const onCommand = (x: number, y: number) => {
-  const selected = units.filter(unit => unit.selected)
+  const selected = units.value.filter(unit => unit.selected)
   if (!selected.length) return
 
   const destination = worldToScreen(x, y)
@@ -56,7 +64,7 @@ const onCommand = (x: number, y: number) => {
   const columns = Math.ceil(Math.sqrt(selected.length))
   const rows = Math.ceil(selected.length / columns)
 
-  selected.forEach((unit, index) => {
+  const moves = selected.map((unit, index) => {
     const row = Math.floor(index / columns)
     const countInRow = Math.min(columns, selected.length - row * columns)
     const column = index % columns
@@ -64,10 +72,12 @@ const onCommand = (x: number, y: number) => {
       destination.x + (column - (countInRow - 1) / 2) * spacing,
       destination.y + (row - (rows - 1) / 2) * spacing,
     )
-    unit.moveTo(
-      Math.max(-worldWidth / 2, Math.min(worldWidth / 2, target.x)),
-      Math.max(-worldHeight / 2, Math.min(worldHeight / 2, target.y)),
-    )
+    return {
+      unitId: unit.id,
+      x: Math.max(-worldWidth / 2, Math.min(worldWidth / 2, target.x)),
+      y: Math.max(-worldHeight / 2, Math.min(worldHeight / 2, target.y)),
+    }
   })
+  store.commit('game/moveUnits', moves)
 }
 </script>
