@@ -51,6 +51,7 @@
       <slot />
     </svg>
     <div v-if="isSelecting" class="selection-box" :style="selectionStyle" />
+    <slot name="overlay" />
   </div>
 </template>
 

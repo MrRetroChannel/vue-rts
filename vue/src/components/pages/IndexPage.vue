@@ -2,7 +2,7 @@
   <main>
     <h1>Игровое поле</h1>
     <p>Карта {{ worldWidth }} × {{ worldHeight }} · шаг сетки {{ gridSize }}</p>
-    <p>Камера: WASD или стрелки, масштаб: колесо мыши.</p>
+    <p>Камера: WASD или стрелки, масштаб: колесо мыши, пауза: P.</p>
     <p>Здания строятся из панели навигации под картой. ЛКМ по зданию — выбрать и создавать персонажей, ЛКМ по персонажу — выбрать, рамка мышью — выбрать группу, Shift+ЛКМ или Shift+рамка — добавить к выделению, ПКМ — идти к точке, ПКМ по врагу — атаковать, Shift+ПКМ — добавить команду в очередь.</p>
 
     <GameMap
@@ -36,6 +36,9 @@
           stroke-width="2"
           pointer-events="none"
       />
+      <template #overlay>
+        <div v-if="paused" class="map-message">Пауза</div>
+      </template>
     </GameMap>
 
     <GamePanel
@@ -44,11 +47,13 @@
         :units="selectedUnits"
         :groups="groups"
         :player-group="playerGroup"
+        :paused="paused"
         @build="size => buildSize = size"
         @cancel-build="buildSize = null"
         @spawn="spawnUnit"
         @destroy="destroySelected"
         @player-group="group => store.commit('game/setPlayerGroup', group)"
+        @pause="setPaused"
     />
 
     <RouterLink :to="{ name: $routes.EXAMPLE }">Пример Vuex</RouterLink>
@@ -56,7 +61,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useStore } from 'vuex'
 import GameMap from '@/components/pages/GameMap.vue'
 import GameObject from '@/components/pages/GameObject.vue'
@@ -72,6 +77,7 @@ const objects = computed(() => store.state.game.objects as MapObject[])
 const events = computed(() => store.state.game.events as MoveEvent[])
 const attacks = computed(() => store.state.game.attacks as AttackEvent[])
 const busyIds = () => new Set([...events.value, ...attacks.value].map(event => event.unitId))
+const paused = computed(() => store.state.game.paused as boolean)
 const playerGroup = computed(() => store.state.game.playerGroup as number)
 const groups = computed(() => [...new Set([
   playerGroup.value,
@@ -97,6 +103,19 @@ const nextFrame = (delta: number) => {
     store.commit('game/setMoveEvents', [next])
   })
 }
+
+const setPaused = (value: boolean) => {
+  store.commit('game/setPaused', value)
+}
+
+const onKeyDown = (event: KeyboardEvent) => {
+  if (event.code !== 'KeyP' || event.repeat || event.ctrlKey || event.metaKey || event.altKey) return
+  if (event.target instanceof HTMLElement && event.target.closest('input, textarea, select, [contenteditable]')) return
+  setPaused(!paused.value)
+}
+
+onMounted(() => window.addEventListener('keydown', onKeyDown))
+onUnmounted(() => window.removeEventListener('keydown', onKeyDown))
 
 const buildSize = ref<number | null>(null)
 const pointer = ref<{ x: number; y: number } | null>(null)
@@ -224,3 +243,19 @@ const onCommand = (x: number, y: number, queue: boolean) => {
   }
 }
 </script>
+
+<style scoped lang="scss">
+.map-message {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  padding: 12px 24px;
+  border: 1px solid #b9cba5;
+  background: rgba(36, 52, 33, 0.85);
+  color: #f0f4e7;
+  font-size: 24px;
+  text-align: center;
+  pointer-events: none;
+}
+</style>

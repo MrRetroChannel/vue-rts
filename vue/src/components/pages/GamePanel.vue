@@ -1,6 +1,14 @@
 <template>
   <nav class="game-panel" aria-label="Панель навигации">
     <section>
+      <h2>Игра</h2>
+      <div class="buttons">
+        <button type="button" :class="{ active: paused }" @click="emit('pause', !paused)">
+          {{ paused ? 'Продолжить' : 'Пауза' }} (P)
+        </button>
+      </div>
+    </section>
+    <section>
       <h2>Группа игрока</h2>
       <div class="buttons">
         <button
@@ -73,6 +81,7 @@ defineProps<{
   units: Unit[]
   groups: number[]
   playerGroup: number
+  paused: boolean
 }>()
 const emit = defineEmits<{
   build: [size: number]
@@ -80,6 +89,7 @@ const emit = defineEmits<{
   spawn: []
   destroy: []
   'player-group': [group: number]
+  pause: [paused: boolean]
 }>()
 
 const buildingSizes = [1, 2, 3, 4]

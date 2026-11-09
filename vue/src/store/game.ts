@@ -18,6 +18,7 @@ type GameState = {
   events: MoveEvent[]
   attacks: AttackEvent[]
   playerGroup: number
+  paused: boolean
   selectedObjectId: number | null
   nextObjectId: number
   nextUnitId: number
@@ -141,6 +142,7 @@ export default {
     events: [],
     attacks: [],
     playerGroup: 1,
+    paused: false,
     selectedObjectId: null,
     nextObjectId: 3,
     nextUnitId: 5,
@@ -149,6 +151,9 @@ export default {
     selectUnits: (state: GameState, ids: number[]) => {
       state.units.forEach(unit => unit.selected = ids.includes(unit.id))
       state.selectedObjectId = null
+    },
+    setPaused: (state: GameState, paused: boolean) => {
+      state.paused = paused
     },
     setPlayerGroup: (state: GameState, group: number) => {
       state.playerGroup = group
@@ -196,6 +201,7 @@ export default {
       planMoves(state, state.events.map(({ unitId, x, y }) => ({ unitId, x, y })))
     },
     nextFrame: (state: GameState, delta: number) => {
+      if (state.paused) return
       state.events = state.events.filter(event => {
         const unit = state.units.find(unit => unit.id === event.unitId)
         if (!unit) return false
