@@ -3,7 +3,7 @@
     <h1>Игровое поле</h1>
     <p>Карта {{ worldWidth }} × {{ worldHeight }} · шаг сетки {{ gridSize }}</p>
     <p>Камера: WASD или стрелки, масштаб: колесо мыши.</p>
-    <p>Здания строятся из панели навигации под картой. ЛКМ по зданию — выбрать и создавать персонажей, ЛКМ по персонажу — выбрать, рамка мышью — выбрать группу, Shift+ЛКМ или Shift+рамка — добавить к выделению, ПКМ — идти к точке, ПКМ по персонажу или зданию — атаковать, Shift+ПКМ — добавить команду в очередь.</p>
+    <p>Здания строятся из панели навигации под картой. ЛКМ по зданию — выбрать и создавать персонажей, ЛКМ по персонажу — выбрать, рамка мышью — выбрать группу, Shift+ЛКМ или Shift+рамка — добавить к выделению, ПКМ — идти к точке, ПКМ по врагу — атаковать, Shift+ПКМ — добавить команду в очередь.</p>
 
     <GameMap
         @tick="nextFrame"
@@ -18,7 +18,7 @@
           :object="object"
           :selected="object.id === selectedObject?.id"
           @select="selectObject(object.id)"
-          @target="attack({ kind: 'object', id: object.id })"
+          @target="queue => attack({ kind: 'object', id: object.id }, queue)"
       />
       <GameUnit
           v-for="unit in units"
@@ -26,7 +26,7 @@
           :unit="unit"
           :move-event="events.find(event => event.unitId === unit.id)"
           @select="additive => selectUnit(unit.id, additive)"
-          @target="attack({ kind: 'unit', id: unit.id })"
+          @target="queue => attack({ kind: 'unit', id: unit.id }, queue)"
       />
       <polygon
           v-if="ghost"
@@ -42,10 +42,13 @@
         :build-size="buildSize"
         :building="selectedObject"
         :units="selectedUnits"
+        :groups="groups"
+        :player-group="playerGroup"
         @build="size => buildSize = size"
         @cancel-build="buildSize = null"
         @spawn="spawnUnit"
         @destroy="destroySelected"
+        @player-group="group => store.commit('game/setPlayerGroup', group)"
     />
 
     <RouterLink :to="{ name: $routes.EXAMPLE }">Пример Vuex</RouterLink>
@@ -69,6 +72,12 @@ const objects = computed(() => store.state.game.objects as MapObject[])
 const events = computed(() => store.state.game.events as MoveEvent[])
 const attacks = computed(() => store.state.game.attacks as AttackEvent[])
 const busyIds = () => new Set([...events.value, ...attacks.value].map(event => event.unitId))
+const playerGroup = computed(() => store.state.game.playerGroup as number)
+const groups = computed(() => [...new Set([
+  playerGroup.value,
+  ...units.value.map(unit => unit.group),
+  ...objects.value.map(object => object.group),
+])].sort((a, b) => a - b))
 const selectedUnits = computed(() => units.value.filter(unit => unit.selected))
 const selectedObject = computed(() => objects.value.find(object => object.id === store.state.game.selectedObjectId))
 
@@ -112,6 +121,7 @@ const onBackgroundClick = (x: number, y: number, additive: boolean) => {
 }
 
 const selectUnit = (id: number, additive: boolean) => {
+  if (units.value.find(unit => unit.id === id)?.group !== playerGroup.value) return
   const ids = selectedUnits.value.map(unit => unit.id)
   if (!additive) {
     store.commit('game/selectUnits', [id])
@@ -123,6 +133,7 @@ const selectUnit = (id: number, additive: boolean) => {
 }
 
 const selectObject = (id: number) => {
+  if (objects.value.find(object => object.id === id)?.group !== playerGroup.value) return
   store.commit('game/selectObject', id)
 }
 
@@ -136,9 +147,17 @@ const destroySelected = () => {
   store.commit('game/destroyUnits', ids)
 }
 
-const attack = (target: AttackTarget) => {
+const attack = (target: AttackTarget, queue: boolean) => {
   if (buildSize.value) {
     buildSize.value = null
+    return
+  }
+  const place = target.kind === 'unit'
+    ? units.value.find(unit => unit.id === target.id)
+    : objects.value.find(object => object.id === target.id)
+  if (!place) return
+  if (place.group === playerGroup.value) {
+    onCommand(place.x, place.y, queue)
     return
   }
   const ids = selectedUnits.value.map(unit => unit.id)
@@ -149,6 +168,7 @@ const attack = (target: AttackTarget) => {
 
 const selectArea = (left: number, top: number, right: number, bottom: number, additive: boolean) => {
   const ids = units.value.filter(unit => {
+    if (unit.group !== playerGroup.value) return false
     const point = worldToScreen(unit.x, unit.y)
     return point.x >= left && point.x <= right
       && point.y - 10 >= top && point.y - 10 <= bottom

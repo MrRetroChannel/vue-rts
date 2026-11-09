@@ -1,6 +1,21 @@
 <template>
   <nav class="game-panel" aria-label="Панель навигации">
     <section>
+      <h2>Группа игрока</h2>
+      <div class="buttons">
+        <button
+            v-for="group in groups"
+            :key="group"
+            type="button"
+            :class="{ active: playerGroup === group }"
+            @click="emit('player-group', group)"
+        >
+          <span class="swatch" :style="{ background: groupColor(group) }" />
+          Группа {{ group }}
+        </button>
+      </div>
+    </section>
+    <section>
       <h2>Строительство</h2>
       <div class="buttons">
         <button
@@ -18,7 +33,7 @@
     </section>
     <section v-if="building">
       <h2>Здание {{ building.size }}×{{ building.size }}</h2>
-      <p>Здоровье: {{ building.health }}/{{ building.maxHealth }}</p>
+      <p>Группа {{ building.group }} · здоровье: {{ building.health }}/{{ building.maxHealth }}</p>
       <div class="buttons">
         <button type="button" @click="emit('spawn')">Создать персонажа</button>
       </div>
@@ -27,6 +42,8 @@
       <h2 v-if="units.length === 1">Персонаж #{{ units[0].id }}</h2>
       <h2 v-else>Выбрано персонажей: {{ units.length }}</h2>
       <dl v-if="units.length === 1">
+        <dt>Группа</dt>
+        <dd>{{ units[0].group }}</dd>
         <dt>Здоровье</dt>
         <dd>{{ units[0].health }}/{{ units[0].maxHealth }}</dd>
         <dt>Сила</dt>
@@ -48,9 +65,22 @@
 <script setup lang="ts">
 import type { MapObject } from '@/game/occupancy'
 import type { Unit } from '@/game/Unit'
+import { groupColor } from '@/game/groups'
 
-defineProps<{ buildSize: number | null; building?: MapObject; units: Unit[] }>()
-const emit = defineEmits<{ build: [size: number]; 'cancel-build': []; spawn: []; destroy: [] }>()
+defineProps<{
+  buildSize: number | null
+  building?: MapObject
+  units: Unit[]
+  groups: number[]
+  playerGroup: number
+}>()
+const emit = defineEmits<{
+  build: [size: number]
+  'cancel-build': []
+  spawn: []
+  destroy: []
+  'player-group': [group: number]
+}>()
 
 const buildingSizes = [1, 2, 3, 4]
 </script>
@@ -102,6 +132,15 @@ const buildingSizes = [1, 2, 3, 4]
     &.active {
       border-color: #ffe08a;
       color: #ffe08a;
+    }
+
+    .swatch {
+      display: inline-block;
+      width: 10px;
+      height: 10px;
+      margin-right: 4px;
+      border: 1px solid #303b31;
+      border-radius: 50%;
     }
 
     &.danger {

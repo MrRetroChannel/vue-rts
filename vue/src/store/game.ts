@@ -17,6 +17,7 @@ type GameState = {
   objects: MapObject[]
   events: MoveEvent[]
   attacks: AttackEvent[]
+  playerGroup: number
   selectedObjectId: number | null
   nextObjectId: number
   nextUnitId: number
@@ -130,21 +131,28 @@ export default {
     units: [
       new Unit(1, 80, 80, 150),
       new Unit(2, -240, -120, 110),
-      new Unit(3, 260, -100, 190),
+      new Unit(3, 360, -160, 190, 'land', 2),
       new Unit(4, -200, 280, 130, 'water'),
     ],
     objects: [
-      { id: 1, x: 160, y: 80, size: 2, maxHealth: 250, health: 250 },
+      { id: 1, x: 160, y: 80, size: 2, group: 1, maxHealth: 250, health: 250 },
+      { id: 2, x: 480, y: -280, size: 2, group: 2, maxHealth: 250, health: 250 },
     ],
     events: [],
     attacks: [],
+    playerGroup: 1,
     selectedObjectId: null,
-    nextObjectId: 2,
+    nextObjectId: 3,
     nextUnitId: 5,
   }),
   mutations: {
     selectUnits: (state: GameState, ids: number[]) => {
       state.units.forEach(unit => unit.selected = ids.includes(unit.id))
+      state.selectedObjectId = null
+    },
+    setPlayerGroup: (state: GameState, group: number) => {
+      state.playerGroup = group
+      state.units.forEach(unit => unit.selected = false)
       state.selectedObjectId = null
     },
     selectObject: (state: GameState, id: number) => {
@@ -158,7 +166,7 @@ export default {
       const point = findFreePosition(object.x, object.y, state.units, state.objects, [], reserved,
         (x, y) => getTerrain(x, y) === 'land')
       if (!point) return
-      state.units.push(new Unit(state.nextUnitId++, point.x, point.y, 140))
+      state.units.push(new Unit(state.nextUnitId++, point.x, point.y, 140, 'land', object.group))
     },
     destroyUnits: (state: GameState, ids: number[]) => {
       state.units = state.units.filter(unit => !ids.includes(unit.id))
@@ -166,7 +174,11 @@ export default {
       state.attacks = state.attacks.filter(attack => !ids.includes(attack.unitId))
     },
     attack: (state: GameState, { unitIds, target }: { unitIds: number[]; target: AttackTarget }) => {
-      const attackers = target.kind === 'unit' ? unitIds.filter(id => id !== target.id) : unitIds
+      const place = findTarget(state, target)
+      if (!place) return
+      const attackers = state.units
+        .filter(unit => unitIds.includes(unit.id) && unit.group !== place.group)
+        .map(unit => unit.id)
       state.attacks = state.attacks.filter(attack => !unitIds.includes(attack.unitId))
       state.events = state.events.filter(event => !unitIds.includes(event.unitId))
       state.attacks.push(...attackers.map(unitId => ({ unitId, target, cooldown: 0 })))
@@ -180,7 +192,7 @@ export default {
     placeBuilding: (state: GameState, building: { x: number; y: number; size: number }) => {
       if (!canPlaceObject(building, state.units, state.objects)) return
       const health = 150 * building.size
-      state.objects.push({ id: state.nextObjectId++, ...building, maxHealth: health, health })
+      state.objects.push({ id: state.nextObjectId++, ...building, group: state.playerGroup, maxHealth: health, health })
       planMoves(state, state.events.map(({ unitId, x, y }) => ({ unitId, x, y })))
     },
     nextFrame: (state: GameState, delta: number) => {

@@ -10,6 +10,7 @@ export type MapObject = {
   x: number
   y: number
   size: number
+  group: number
   maxHealth: number
   health: number
 }
@@ -90,7 +91,7 @@ export const canPlaceObject = (object: Point & { size: number }, units: Unit[], 
   const half = objectHalf(object)
   if (Math.abs(object.x) + half > worldWidth / 2 || Math.abs(object.y) + half > worldHeight / 2) return false
   if (overlapsWater(object.x - half, object.y - half, object.x + half, object.y + half)) return false
-  const footprint = { ...object, id: 0, maxHealth: 0, health: 0 }
+  const footprint = { ...object, id: 0, group: 0, maxHealth: 0, health: 0 }
   return !objects.some(other => {
     const limit = half + objectHalf(other)
     return Math.abs(other.x - object.x) < limit && Math.abs(other.y - object.y) < limit

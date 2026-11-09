@@ -24,14 +24,16 @@ export class Unit {
     y: number
     speed: number
     terrain: Terrain
+    group: number
     selected = false
 
-    constructor(id: number, x: number, y: number, speed: number, terrain: Terrain = 'land') {
+    constructor(id: number, x: number, y: number, speed: number, terrain: Terrain = 'land', group = 1) {
         this.id = id
         this.x = x
         this.y = y
         this.speed = speed
         this.terrain = terrain
+        this.group = group
     }
 
     update(delta: number, targetX: number, targetY: number, canMove: (x: number, y: number) => boolean) {
