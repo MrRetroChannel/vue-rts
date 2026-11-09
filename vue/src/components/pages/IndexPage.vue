@@ -37,7 +37,17 @@
           pointer-events="none"
       />
       <template #overlay>
-        <div v-if="paused" class="map-message">Пауза</div>
+        <div v-if="winner !== null" class="map-message game-over" @mousedown.stop @click.stop>
+          <strong>Игра окончена</strong>
+          <span v-if="winner">
+            Победила
+            <span class="swatch" :style="{ background: groupColor(winner) }" />
+            группа {{ winner }}{{ winner === playerGroup ? ' — это вы!' : '' }}
+          </span>
+          <span v-else>Ничья: на карте никого не осталось</span>
+          <button type="button" @click="loadScenario(store.state.game.scenarioIndex)">Сыграть ещё раз</button>
+        </div>
+        <div v-else-if="paused" class="map-message">Пауза</div>
       </template>
     </GameMap>
 
@@ -48,12 +58,15 @@
         :groups="groups"
         :player-group="playerGroup"
         :paused="paused"
+        :scenario-index="store.state.game.scenarioIndex"
+        :game-over="winner !== null"
         @build="size => buildSize = size"
         @cancel-build="buildSize = null"
         @spawn="spawnUnit"
         @destroy="destroySelected"
         @player-group="group => store.commit('game/setPlayerGroup', group)"
         @pause="setPaused"
+        @scenario="loadScenario"
     />
 
     <RouterLink :to="{ name: $routes.EXAMPLE }">Пример Vuex</RouterLink>
@@ -70,6 +83,7 @@ import GamePanel from '@/components/pages/GamePanel.vue'
 import type { Unit, MoveEvent, AttackEvent, AttackTarget } from '@/game/Unit'
 import { UNIT_RADIUS, canPlaceObject, objectCorners, snapObject, type MapObject } from '@/game/occupancy'
 import { worldWidth, worldHeight, gridSize, worldToScreen, screenToWorld } from '@/game/map'
+import { groupColor } from '@/game/groups'
 
 const store = useStore()
 const units = computed(() => store.state.game.units as Unit[])
@@ -78,6 +92,7 @@ const events = computed(() => store.state.game.events as MoveEvent[])
 const attacks = computed(() => store.state.game.attacks as AttackEvent[])
 const busyIds = () => new Set([...events.value, ...attacks.value].map(event => event.unitId))
 const paused = computed(() => store.state.game.paused as boolean)
+const winner = computed(() => store.state.game.winner as number | null)
 const playerGroup = computed(() => store.state.game.playerGroup as number)
 const groups = computed(() => [...new Set([
   playerGroup.value,
@@ -108,9 +123,16 @@ const setPaused = (value: boolean) => {
   store.commit('game/setPaused', value)
 }
 
+const loadScenario = (index: number) => {
+  buildSize.value = null
+  store.commit('commandQueue/reset')
+  store.commit('game/loadScenario', index)
+}
+
 const onKeyDown = (event: KeyboardEvent) => {
   if (event.code !== 'KeyP' || event.repeat || event.ctrlKey || event.metaKey || event.altKey) return
   if (event.target instanceof HTMLElement && event.target.closest('input, textarea, select, [contenteditable]')) return
+  if (winner.value !== null) return
   setPaused(!paused.value)
 }
 
@@ -257,5 +279,35 @@ const onCommand = (x: number, y: number, queue: boolean) => {
   font-size: 24px;
   text-align: center;
   pointer-events: none;
+
+  &.game-over {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    align-items: center;
+    font-size: 18px;
+    pointer-events: auto;
+
+    strong {
+      font-size: 24px;
+    }
+
+    .swatch {
+      display: inline-block;
+      width: 12px;
+      height: 12px;
+      border: 1px solid #303b31;
+      border-radius: 50%;
+    }
+
+    button {
+      padding: 4px 12px;
+      border: 1px solid #b9cba5;
+      background: #354c2e;
+      color: inherit;
+      font-size: 16px;
+      cursor: pointer;
+    }
+  }
 }
 </style>

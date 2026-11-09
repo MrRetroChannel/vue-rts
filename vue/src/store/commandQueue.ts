@@ -12,6 +12,9 @@ export default {
     shift: (state: QueueState, id: number) => {
       state.byUnit[id]?.shift()
     },
+    reset: (state: QueueState) => {
+      state.byUnit = {}
+    },
     clear: (state: QueueState, ids: number[]) => {
       ids.forEach(id => delete state.byUnit[id])
     },

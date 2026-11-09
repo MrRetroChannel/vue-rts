@@ -11,6 +11,7 @@ import {
 import { worldToScreen, screenToWorld } from '@/game/map'
 import { getTerrain } from '@/game/terrain'
 import { findPath } from '@/game/pathfinding'
+import { scenarios, createScenario } from '@/game/scenarios'
 
 type GameState = {
   units: Unit[]
@@ -19,6 +20,11 @@ type GameState = {
   attacks: AttackEvent[]
   playerGroup: number
   paused: boolean
+  scenarioIndex: number
+  aggressiveGroups: number[]
+  aggressionTimer: number
+  startGroupCount: number
+  winner: number | null
   selectedObjectId: number | null
   nextObjectId: number
   nextUnitId: number
@@ -77,6 +83,68 @@ const approachPoint = (unit: Unit, target: AttackTarget, place: Unit | MapObject
   return screenToWorld(to.x + (from.x - to.x) / length * reach, to.y + (from.y - to.y) / length * reach)
 }
 
+const AGGRESSION_INTERVAL = 0.5
+
+const attackNearestEnemies = (state: GameState, delta: number) => {
+  state.aggressionTimer += delta
+  if (state.aggressionTimer < AGGRESSION_INTERVAL) return
+  state.aggressionTimer = 0
+
+  const busy = new Set([...state.events, ...state.attacks].map(event => event.unitId))
+  state.units.forEach(unit => {
+    if (busy.has(unit.id) || !state.aggressiveGroups.includes(unit.group)) return
+    const point = worldToScreen(unit.x, unit.y)
+    const candidates = [
+      ...state.units.map(other => ({ kind: 'unit' as const, place: other })),
+      ...state.objects.map(object => ({ kind: 'object' as const, place: object })),
+    ].filter(candidate => candidate.place.group !== unit.group)
+
+    let nearest: AttackTarget | null = null
+    let nearestDistance = Infinity
+    for (const { kind, place } of candidates) {
+      const other = worldToScreen(place.x, place.y)
+      const distance = Math.hypot(point.x - other.x, point.y - other.y)
+      if (distance < nearestDistance) {
+        nearestDistance = distance
+        nearest = { kind, id: place.id }
+      }
+    }
+    if (nearest) state.attacks.push({ unitId: unit.id, target: nearest, cooldown: 0 })
+  })
+}
+
+const aliveGroups = (state: Pick<GameState, 'units' | 'objects'>) =>
+  [...new Set([...state.units, ...state.objects].map(item => item.group))]
+
+const checkGameEnd = (state: GameState) => {
+  const groups = aliveGroups(state)
+  if (state.startGroupCount < 2 || groups.length > 1) return
+  state.winner = groups[0] ?? 0
+  state.events = []
+  state.attacks = []
+}
+
+const scenarioState = (index: number) => {
+  const scenario = scenarios[index]
+  const { units, objects } = createScenario(scenario)
+  return {
+    units,
+    objects,
+    events: [],
+    attacks: [],
+    playerGroup: 1,
+    paused: false,
+    scenarioIndex: index,
+    aggressiveGroups: scenario.aggressiveGroups,
+    aggressionTimer: 0,
+    startGroupCount: aliveGroups({ units, objects }).length,
+    winner: null,
+    selectedObjectId: null,
+    nextObjectId: objects.length + 1,
+    nextUnitId: units.length + 1,
+  }
+}
+
 const removeDead = (state: GameState) => {
   const deadUnits = state.units.filter(unit => unit.health <= 0).map(unit => unit.id)
   if (deadUnits.length) {
@@ -128,26 +196,11 @@ const updateAttacks = (state: GameState, delta: number) => {
 
 export default {
   namespaced: true,
-  state: (): GameState => ({
-    units: [
-      new Unit(1, 80, 80, 150),
-      new Unit(2, -240, -120, 110),
-      new Unit(3, 360, -160, 190, 'land', 2),
-      new Unit(4, -200, 280, 130, 'water'),
-    ],
-    objects: [
-      { id: 1, x: 160, y: 80, size: 2, group: 1, maxHealth: 250, health: 250 },
-      { id: 2, x: 480, y: -280, size: 2, group: 2, maxHealth: 250, health: 250 },
-    ],
-    events: [],
-    attacks: [],
-    playerGroup: 1,
-    paused: false,
-    selectedObjectId: null,
-    nextObjectId: 3,
-    nextUnitId: 5,
-  }),
+  state: (): GameState => scenarioState(0),
   mutations: {
+    loadScenario: (state: GameState, index: number) => {
+      Object.assign(state, scenarioState(index))
+    },
     selectUnits: (state: GameState, ids: number[]) => {
       state.units.forEach(unit => unit.selected = ids.includes(unit.id))
       state.selectedObjectId = null
@@ -177,6 +230,7 @@ export default {
       state.units = state.units.filter(unit => !ids.includes(unit.id))
       state.events = state.events.filter(event => !ids.includes(event.unitId))
       state.attacks = state.attacks.filter(attack => !ids.includes(attack.unitId))
+      checkGameEnd(state)
     },
     attack: (state: GameState, { unitIds, target }: { unitIds: number[]; target: AttackTarget }) => {
       const place = findTarget(state, target)
@@ -201,7 +255,7 @@ export default {
       planMoves(state, state.events.map(({ unitId, x, y }) => ({ unitId, x, y })))
     },
     nextFrame: (state: GameState, delta: number) => {
-      if (state.paused) return
+      if (state.paused || state.winner !== null) return
       state.events = state.events.filter(event => {
         const unit = state.units.find(unit => unit.id === event.unitId)
         if (!unit) return false
@@ -212,8 +266,10 @@ export default {
         if (arrived && event.waypoints) event.waypoints.shift()
         return !arrived || !!event.waypoints?.length
       })
+      attackNearestEnemies(state, delta)
       updateAttacks(state, delta)
       removeDead(state)
+      checkGameEnd(state)
     },
   },
 }

@@ -3,9 +3,21 @@
     <section>
       <h2>Игра</h2>
       <div class="buttons">
-        <button type="button" :class="{ active: paused }" @click="emit('pause', !paused)">
+        <button type="button" :class="{ active: paused }" :disabled="gameOver" @click="emit('pause', !paused)">
           {{ paused ? 'Продолжить' : 'Пауза' }} (P)
         </button>
+      </div>
+      <label class="scenario">
+        Сценарий
+        <select v-model="chosenScenario">
+          <option v-for="(scenario, index) in scenarios" :key="index" :value="index">
+            {{ scenario.name }}
+          </option>
+        </select>
+      </label>
+      <p>{{ scenarios[chosenScenario].description }}</p>
+      <div class="buttons">
+        <button type="button" @click="emit('scenario', chosenScenario)">Запустить сценарий</button>
       </div>
     </section>
     <section>
@@ -73,15 +85,19 @@
 <script setup lang="ts">
 import type { MapObject } from '@/game/occupancy'
 import type { Unit } from '@/game/Unit'
+import { ref, watch } from 'vue'
 import { groupColor } from '@/game/groups'
+import { scenarios } from '@/game/scenarios'
 
-defineProps<{
+const props = defineProps<{
   buildSize: number | null
   building?: MapObject
   units: Unit[]
   groups: number[]
   playerGroup: number
   paused: boolean
+  scenarioIndex: number
+  gameOver: boolean
 }>()
 const emit = defineEmits<{
   build: [size: number]
@@ -90,7 +106,11 @@ const emit = defineEmits<{
   destroy: []
   'player-group': [group: number]
   pause: [paused: boolean]
+  scenario: [index: number]
 }>()
+
+const chosenScenario = ref(props.scenarioIndex)
+watch(() => props.scenarioIndex, index => chosenScenario.value = index)
 
 const buildingSizes = [1, 2, 3, 4]
 </script>
@@ -112,6 +132,7 @@ const buildingSizes = [1, 2, 3, 4]
   }
 
   p {
+    max-width: 320px;
     margin: 0 0 8px;
   }
 
@@ -126,6 +147,20 @@ const buildingSizes = [1, 2, 3, 4]
     margin: 0;
   }
 
+  .scenario {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    margin: 8px 0;
+
+    select {
+      padding: 2px 4px;
+      border: 1px solid #b9cba5;
+      background: #354c2e;
+      color: inherit;
+    }
+  }
+
   .buttons {
     display: flex;
     flex-wrap: wrap;
@@ -138,6 +173,11 @@ const buildingSizes = [1, 2, 3, 4]
     background: #354c2e;
     color: inherit;
     cursor: pointer;
+
+    &:disabled {
+      opacity: 0.5;
+      cursor: default;
+    }
 
     &.active {
       border-color: #ffe08a;
