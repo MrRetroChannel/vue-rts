@@ -25,6 +25,7 @@
           :key="unit.id"
           :unit="unit"
           :move-event="events.find(event => event.unitId === unit.id)"
+          :queue="store.state.commandQueue.byUnit[unit.id]"
           @select="additive => selectUnit(unit.id, additive)"
           @target="queue => attack({ kind: 'unit', id: unit.id }, queue)"
       />

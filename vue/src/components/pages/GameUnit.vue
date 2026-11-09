@@ -1,4 +1,11 @@
 <template>
+  <g v-if="unit.selected && queuePoints.length" class="queue" pointer-events="none">
+    <polyline :points="queueLine" fill="none" stroke="#ffe08a" stroke-width="1.5" stroke-dasharray="6 4" />
+    <g v-for="(point, index) in queuePoints" :key="index" :transform="`translate(${point.x} ${point.y})`">
+      <ellipse rx="9" ry="5" fill="#243421" stroke="#ffe08a" stroke-width="1.5" />
+      <text y="3.5" text-anchor="middle" fill="#ffe08a" font-size="10">{{ index + 1 }}</text>
+    </g>
+  </g>
   <ellipse
       v-if="moveEvent"
       :cx="targetScreen.x"
@@ -45,7 +52,7 @@ import { UNIT_RADIUS } from '@/game/occupancy'
 import { worldToScreen } from '@/game/map'
 import { groupColor } from '@/game/groups'
 
-const props = defineProps<{ unit: Unit; moveEvent?: MoveEvent }>()
+const props = defineProps<{ unit: Unit; moveEvent?: MoveEvent; queue?: MoveEvent[] }>()
 const emit = defineEmits<{ select: [additive: boolean]; target: [queue: boolean] }>()
 
 const unitScreen = computed(() => worldToScreen(props.unit.x, props.unit.y))
@@ -53,6 +60,9 @@ const targetScreen = computed(() => worldToScreen(
   props.moveEvent?.x ?? props.unit.x,
   props.moveEvent?.y ?? props.unit.y,
 ))
+const queuePoints = computed(() => (props.queue ?? []).map(move => worldToScreen(move.x, move.y)))
+const queueLine = computed(() => [targetScreen.value, ...queuePoints.value]
+  .map(point => `${point.x},${point.y}`).join(' '))
 </script>
 
 <style scoped lang="scss">

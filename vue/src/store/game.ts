@@ -84,6 +84,7 @@ const approachPoint = (unit: Unit, target: AttackTarget, place: Unit | MapObject
 }
 
 const AGGRESSION_INTERVAL = 0.5
+const BLOCKED_TIMEOUT = 2
 
 const attackNearestEnemies = (state: GameState, delta: number) => {
   state.aggressionTimer += delta
@@ -260,11 +261,13 @@ export default {
         const unit = state.units.find(unit => unit.id === event.unitId)
         if (!unit) return false
         const target = event.waypoints?.[0] ?? event
-        const arrived = unit.update(delta, target.x, target.y, (x, y) =>
+        const status = unit.update(delta, target.x, target.y, (x, y) =>
           getTerrain(x, y) === unit.terrain
           && canOccupy(x, y, UNIT_RADIUS, state.units, state.objects, [unit.id]))
-        if (arrived && event.waypoints) event.waypoints.shift()
-        return !arrived || !!event.waypoints?.length
+        event.blockedTime = status === 'blocked' ? (event.blockedTime ?? 0) + delta : 0
+        if (event.blockedTime > BLOCKED_TIMEOUT) return false
+        if (status === 'arrived' && event.waypoints) event.waypoints.shift()
+        return status !== 'arrived' || !!event.waypoints?.length
       })
       attackNearestEnemies(state, delta)
       updateAttacks(state, delta)
